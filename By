@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Drag & Drop UI Builder</title>
+  <style>
+    body, html {
+      height: 100%;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+    }
+    #sidebar {
+      width: 200px;
+      background: #eee;
+      padding: 10px;
+    }
+    #button-palette {
+      padding: 10px;
+      background: blue;
+      color: white;
+      cursor: grab;
+      user-select: none;
+      margin-bottom: 20px;
+      text-align: center;
+      border-radius: 5px;
+    }
+    #canvas {
+      flex: 1;
+      border: 2px dashed #ccc;
+      margin: 10px;
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+    .draggable-btn {
+      position: absolute;
+      background-color: blue;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: move;
+      display: flex;
+      align-items: center;
+      user-select: none;
+    }
+    .draggable-btn input {
+      border: none;
+      background: transparent;
+      color: white;
+      font-weight: bold;
+      width: 80px;
+      margin-right: 5px;
+      outline: none;
+    }
+    .delete-btn {
+      background: red;
+      border: none;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      line-height: 20px;
+      text-align: center;
+      padding: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="sidebar">
+    <div id="button-palette" draggable="true">Button</div>
+  </div>
+
+  <div id="canvas"></div>
+
+  <script>
+    const palette = document.getElementById('button-palette');
+    const canvas = document.getElementById('canvas');
+    let draggingElem = null;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    // Allow drop on canvas
+    canvas.addEventListener('dragover', e => e.preventDefault());
+
+    // Handle drop to create new button
+    canvas.addEventListener('drop', e => {
+      e.preventDefault();
+      if (e.dataTransfer.getData('text') === 'button') {
+        createButton(e.clientX, e.clientY);
+      }
+    });
+
+    // Drag start on palette
+    palette.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text', 'button');
+    });
+
+    // Create a new draggable button on canvas
+    function createButton(x, y) {
+      const rect = canvas.getBoundingClientRect();
+      const btn = document.createElement('div');
+      btn.classList.add('draggable-btn');
+      btn.style.left = (x - rect.left) + 'px';
+      btn.style.top = (y - rect.top) + 'px';
+
+      // Input label
+      const input = document.createElement('input');
+      input.value = 'Button';
+      input.addEventListener('click', e => e.stopPropagation());
+      btn.appendChild(input);
+
+      // Delete button
+      const delBtn = document.createElement('button');
+      delBtn.className = 'delete-btn';
+      delBtn.textContent = '×';
+      delBtn.onclick = () => btn.remove();
+      btn.appendChild(delBtn);
+
+      // Drag handlers
+      btn.addEventListener('mousedown', dragMouseDown);
+
+      canvas.appendChild(btn);
+    }
+
+    // Drag functions
+    function dragMouseDown(e) {
+      draggingElem = e.currentTarget;
+      const rect = draggingElem.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+
+      document.addEventListener('mousemove', elementDrag);
+      document.addEventListener('mouseup', stopDrag);
+    }
+
+    function elementDrag(e) {
+      if (!draggingElem) return;
+      const rect = canvas.getBoundingClientRect();
+      let x = e.clientX - rect.left - offsetX;
+      let y = e.clientY - rect.top - offsetY;
+
+      // Boundaries so button stays inside canvas
+      x = Math.max(0, Math.min(x, rect.width - draggingElem.offsetWidth));
+      y = Math.max(0, Math.min(y, rect.height - draggingElem.offsetHeight));
+
+      draggingElem.style.left = x + 'px';
+      draggingElem.style.top = y + 'px';
+    }
+
+    function stopDrag() {
+      draggingElem = null;
+      document.removeEventListener('mousemove', elementDrag);
+      document.removeEventListener('mouseup', stopDrag);
+    }
+  </script>
+
+</body>
+</html>
